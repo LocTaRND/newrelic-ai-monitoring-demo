@@ -1,5 +1,5 @@
 Flask==2.3.3
 openai==0.28.1
-newrelic==9.2.0
+newrelic==10.15.0
 langchain==0.0.350
 requests==2.31.0
