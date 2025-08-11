@@ -1,6 +1,6 @@
 # Ignore secrets and sensitive files
 **/newrelic/values.yaml
-**/secrets/secret.yaml
+**/secrets/secrets.yaml
 *.log
 .env
 # Node modules and build output
