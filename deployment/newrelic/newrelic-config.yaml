@@ -1,0 +1,47 @@
+# newrelic-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: newrelic-config
+  namespace: default
+data:
+  newrelic.ini: |
+    [newrelic]
+    monitor_mode = true
+    ai_monitoring.enabled = true
+    ai_monitoring.streaming.enabled = true
+    ai_monitoring.record_content.enabled = true
+    distributed_tracing.enabled = true
+    span_events.enabled = true
+    labels = environment:production;cluster:default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: newrelic.config
+  namespace: default
+data:
+  newrelic.config: |-
+    <?xml version="1.0"?>
+    <configuration xmlns="urn:newrelic-config" agentEnabled="true">
+        <aiMonitoring enabled="true" />
+        <customEvents enabled="true" maximumSamplesStored="100000" />
+        <spanEvents enabled="true" maximumSamplesStored="10000" />
+        <errorCollector>
+            <ignoreStatusCodes>
+                <code>400</code>
+                <code>401</code>
+                <code>403</code>
+                <code>404</code>
+                <code>405</code>
+                <code>406</code>
+                <code>409</code>
+                <code>412</code>
+                <code>415</code>
+                <code>451</code>
+                <code>422</code>
+                <code>429</code>
+            </ignoreStatusCodes>
+        </errorCollector>
+        <transactionEvents maximumSamplesStored="120" />
+    </configuration>

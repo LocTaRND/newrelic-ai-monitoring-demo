@@ -1,0 +1,113 @@
+# ai-app-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-chatbot
+  namespace: default
+  labels:
+    app: ai-chatbot
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-chatbot
+  template:
+    metadata:
+      labels:
+        app: ai-chatbot
+        version: v1
+      annotations:
+        # Enable New Relic metadata injection
+        newrelic.com/scrape: "true"
+        newrelic.com/port: "5000"
+        newrelic.com/path: "/metrics"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: chatbot
+        image: taloc/newrelic-ai:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-secrets
+              key: openai-api-key
+        - name: NEW_RELIC_CONFIG_FILE
+          value: "/etc/newrelic/newrelic.ini"
+        - name: NEW_RELIC_APP_NAME
+          value: "ai-chatbot"
+        - name: NEW_RELIC_LICENSE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: newrelic-license-key
+              key: NEW_RELIC_LICENSE_KEY          
+        - name: NEW_RELIC_ENVIRONMENT
+          value: "production"
+        - name: NEW_RELIC_CLUSTER_NAME
+          value: "default"
+        - name: NEW_RELIC_AI_MONITORING_ENABLED
+          value: "true"
+        - name: NEW_RELIC_METADATA_KUBERNETES_CLUSTER_NAME
+          value: "default"
+        - name: NEW_RELIC_METADATA_KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: NEW_RELIC_METADATA_KUBERNETES_NAMESPACE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NEW_RELIC_METADATA_KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: newrelic-config
+          mountPath: /etc/newrelic
+          readOnly: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: newrelic-config
+        configMap:
+          name: newrelic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-chatbot-service
+  namespace: default
+  labels:
+    app: ai-chatbot
+spec:
+  selector:
+    app: ai-chatbot
+  ports:
+  - name: http
+    port: 80
+    targetPort: 5000
+    protocol: TCP
+  type: ClusterIP

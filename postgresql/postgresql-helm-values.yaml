@@ -1,0 +1,73 @@
+# PostgreSQL Helm Chart Custom Values
+## Global configuration
+global:
+  postgresql:
+    auth:
+      postgresPassword: "postgres123"
+      username: "appuser"
+      password: "apppassword"
+      database: "testdb"
+
+## PostgreSQL primary configuration
+primary:
+  ## Number of replicas
+  replicaCount: 1
+  
+  ## Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  ## Persistence configuration
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  
+  ## PostgreSQL configuration
+  postgresqlConfiguration:
+    max_connections: "200"
+    shared_buffers: "128MB"
+    effective_cache_size: "256MB"
+    
+  ## Custom initialization scripts
+  initdbScriptsConfigMap: "postgresql-initdb"
+  
+  ## Security context
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+    
+  ## Service configuration
+  service:
+    type: ClusterIP
+    port: 5432
+
+## Enable authentication
+auth:
+  enablePostgresUser: true
+  postgresPassword: "postgres123"
+  username: "appuser"
+  password: "apppassword"
+  database: "testdb"
+
+## Metrics configuration
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+  
+## Backup configuration (optional)
+backup:
+  enabled: false
+
+## Network policies
+networkPolicy:
+  enabled: false
+

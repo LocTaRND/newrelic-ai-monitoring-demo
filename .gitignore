@@ -1,0 +1,16 @@
+# Ignore secrets and sensitive files
+**/newrelic/values.yaml
+**/secrets/secret.yaml
+*.log
+.env
+# Node modules and build output
+react-crud-app/node_modules/
+react-crud-app/build/
+# Python
+__pycache__/
+*.pyc
+# Dotnet
+application/dotnet/bin/
+application/dotnet/obj/
+# VSCode
+.vscode/

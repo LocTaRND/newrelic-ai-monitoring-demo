@@ -1,0 +1,12 @@
+Error: failed to generate container "9e936ff81800920e18070a8e4c3563f54ca0ad46f4e3706d1f3a73b1614f0bdd" spec: failed to generate spec: path "/" is mounted on "/" but it is not a shared or slave mount
+
+
+# fix
+findmnt -o TARGET,PROPAGATION /
+
+sudo mount --make-rshared /
+
+echo "/ / none bind,rshared 0 0" | sudo tee -a /etc/fstab
+
+sudo systemctl stop k3s
+sudo systemctl start k3s
