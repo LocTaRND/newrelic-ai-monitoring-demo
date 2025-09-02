@@ -112,43 +112,55 @@ rebuild_kubeconfig() {
     
     # Set KUBECONFIG environment variable
     export KUBECONFIG="$KUBECONFIG_PATH"
-    
+
     # Extract current configuration
     SERVER_URL=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.server}')
     CERT_AUTHORITY_DATA=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-    
+
     if [[ -z "$SERVER_URL" || -z "$CERT_AUTHORITY_DATA" ]]; then
         print_error "Failed to extract cluster configuration"
         exit 1
     fi
-    
+
     print_status "Server URL: $SERVER_URL"
     print_status "Creating new cluster configuration..."
-    
+
     # Remove all existing contexts, clusters, and users
     kubectl config delete-context default 2>/dev/null || true
     kubectl config delete-cluster default 2>/dev/null || true
     kubectl config delete-user default 2>/dev/null || true
-    
-    # Create new cluster
+
+    # Write certificate-authority-data, client cert, and client key to permanent files in $HOME/.kube
+    mkdir -p "$HOME/.kube"
+    CA_FILE="$HOME/.kube/${NEW_CLUSTER_NAME}-ca.crt"
+    CLIENT_CERT_FILE="$HOME/.kube/${NEW_CLUSTER_NAME}-client.crt"
+    CLIENT_KEY_FILE="$HOME/.kube/${NEW_CLUSTER_NAME}-client.key"
+
+    echo "$CERT_AUTHORITY_DATA" | base64 -d > "$CA_FILE"
+    extract_credentials
+    echo "$CLIENT_CERT_DATA" | base64 -d > "$CLIENT_CERT_FILE"
+    echo "$CLIENT_KEY_DATA" | base64 -d > "$CLIENT_KEY_FILE"
+
+    chmod 600 "$CA_FILE" "$CLIENT_CERT_FILE" "$CLIENT_KEY_FILE"
+
+    # Create new cluster using --certificate-authority (file path)
     kubectl config set-cluster "$NEW_CLUSTER_NAME" \
         --server="$SERVER_URL" \
-        --certificate-authority-data="$CERT_AUTHORITY_DATA"
-    
-    # Extract and create new user credentials
-    extract_credentials
+        --certificate-authority="$CA_FILE"
+
+    # Create new user using file-based credentials
     kubectl config set-credentials "$NEW_CLUSTER_NAME" \
-        --client-certificate-data="$CLIENT_CERT_DATA" \
-        --client-key-data="$CLIENT_KEY_DATA"
-    
+        --client-certificate="$CLIENT_CERT_FILE" \
+        --client-key="$CLIENT_KEY_FILE"
+
     # Create new context
     kubectl config set-context "$NEW_CLUSTER_NAME" \
         --cluster="$NEW_CLUSTER_NAME" \
         --user="$NEW_CLUSTER_NAME"
-    
+
     # Set current context
     kubectl config use-context "$NEW_CLUSTER_NAME"
-    
+
     print_success "Kubeconfig rebuilt with consistent naming!"
 }
 

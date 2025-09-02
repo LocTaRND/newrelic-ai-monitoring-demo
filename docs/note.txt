@@ -10,3 +10,5 @@ echo "/ / none bind,rshared 0 0" | sudo tee -a /etc/fstab
 
 sudo systemctl stop k3s
 sudo systemctl start k3s
+
+sudo /usr/local/bin/k3s-uninstall.sh

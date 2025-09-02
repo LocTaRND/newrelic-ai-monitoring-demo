@@ -19,6 +19,9 @@ spec:
     metadata:
       labels:
         app: frontend
+      annotations:
+        newrelic.io/scrape: 'true'
+        reloader.stakater.io/auto: "true"        
     spec:
       terminationGracePeriodSeconds: 30
       containers:

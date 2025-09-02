@@ -2,7 +2,7 @@
 apiVersion: newrelic.com/v1alpha2
 kind: Instrumentation
 metadata:
-  name: newrelic-instrumentation
+  name: newrelic-python-instrumentation
   namespace: newrelic
 spec:
   agent:
@@ -26,16 +26,16 @@ spec:
         values: ["default"]
 
  # Select pods containing a specific label and value
- # podLabelSelector:
- #   matchExpressions:
- #     - key: "app.kubernetes.io/name"
- #       operator: "In"
- #       values: ["app1"]
+  podLabelSelector:
+    matchExpressions:
+      - key: "app"
+        operator: "In"
+        values: ["ai-chatbot"]
 ---
 apiVersion: newrelic.com/v1alpha2
 kind: Instrumentation
 metadata:
-  name: newrelic-instrumentation
+  name: newrelic-dotnet-instrumentation
   namespace: newrelic
 spec:
   agent:
@@ -59,16 +59,16 @@ spec:
         values: ["default"]
 
  # Select pods containing a specific label and value
- # podLabelSelector:
- #   matchExpressions:
- #     - key: "app.kubernetes.io/name"
- #       operator: "In"
- #       values: ["app1"]
+  podLabelSelector:
+    matchExpressions:
+      - key: "app"
+        operator: "In"
+        values: ["backend-api"]
 ---
 apiVersion: newrelic.com/v1alpha2
 kind: Instrumentation
 metadata:
-  name: newrelic-instrumentation
+  name: newrelic-nodejs-instrumentation
   namespace: newrelic
 spec:
   agent:
@@ -92,8 +92,8 @@ spec:
         values: ["default"]
 
  # Select pods containing a specific label and value
- # podLabelSelector:
- #   matchExpressions:
- #     - key: "app.kubernetes.io/name"
- #       operator: "In"
- #       values: ["app1"]
+  podLabelSelector:
+    matchExpressions:
+      - key: "app"
+        operator: "In"
+        values: ["frontend"]

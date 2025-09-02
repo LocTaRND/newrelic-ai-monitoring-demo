@@ -19,6 +19,10 @@ What is the performance summary for my .NET API, Python app, and React frontend?
 Analyze all errors across my microservices and identify the most critical issues
 ```
 
+```
+Analyze all errors across my microservices and identify the most critical issues, also show the service name
+```
+
 ## 🐛 Troubleshooting & Diagnostics
 
 ### High Response Time Investigation

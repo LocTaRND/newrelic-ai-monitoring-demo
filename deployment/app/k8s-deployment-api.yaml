@@ -109,8 +109,8 @@ spec:
               value: 'false'
             - name: NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED
               value: 'true'
-            - name: NEW_RELIC_AI_MONITORING_ENABLED
-              value: 'true'
+            # - name: NEW_RELIC_AI_MONITORING_ENABLED
+            #   value: 'true'
           volumeMounts:
             - name: appsettings
               mountPath: /app/appsettings.json

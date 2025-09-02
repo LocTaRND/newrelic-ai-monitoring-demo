@@ -24,6 +24,20 @@ public class ErrorHandlerMiddleware
         try
         {
             await _next(context);
+            
+            // Check if response status code is 400 and convert to 500
+            if (context.Response.StatusCode == 400)
+            {
+                // Log the 400 to 500 conversion as an error
+                _logger.LogError("HTTP 400 Bad Request converted to 500 Internal Server Error for enhanced monitoring. Original request path: {RequestPath}", context.Request.Path);
+                
+                // Create an exception for better New Relic error tracking
+                var badRequestException = new InvalidOperationException($"Bad Request converted to Internal Server Error for path: {context.Request.Path}");
+                _logger.LogError(badRequestException, "BAD REQUEST ERROR: HTTP 400 status converted to 500 for New Relic error tracking");
+                
+                // Convert 400 to 500
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            }
         }
         catch (Exception error)
         {
@@ -33,8 +47,9 @@ public class ErrorHandlerMiddleware
             switch (error)
             {
                 case AppException e:
-                    // custom application error
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    // Convert custom application error from 400 to 500 with error logging
+                    _logger.LogError(e, "APPLICATION ERROR: AppException converted from 400 to 500 - {ErrorMessage}", e.Message);
+                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     break;
                 case KeyNotFoundException e:
                     // not found error
@@ -42,7 +57,7 @@ public class ErrorHandlerMiddleware
                     break;
                 default:
                     // unhandled error
-                    _logger.LogError(error, error.Message);
+                    _logger.LogError(error, "UNHANDLED ERROR: {ErrorMessage}", error.Message);
                     response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     break;
             }

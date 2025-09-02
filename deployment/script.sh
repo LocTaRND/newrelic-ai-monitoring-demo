@@ -1,17 +1,34 @@
 #!/bin/bash
 
+
+# Usage: ./script.sh [apply|delete] [force]
 ACTION=${1:-apply}
+FORCE=${2:-}
 
 VALUES_FILE="newrelic/values.yaml"
 CHECKSUM_FILE=".values_checksum"
 
 if [[ "$ACTION" == "apply" ]]; then
     # Setup NewRelic
+    echo "Setting up NewRelic..."
     NEW_CHECKSUM=$(sha256sum "$VALUES_FILE" | awk '{print $1}')
-    OLD_CHECKSUM=$(cat "$CHECKSUM_FILE" 2>/dev/null || echo "")
+    if [[ ! -f "$CHECKSUM_FILE" ]]; then
+        echo ".values_checksum not found — this looks like a first-time New Relic setup. Deploying newrelic-bundle..."
+        OLD_CHECKSUM=""
+    else
+        OLD_CHECKSUM=$(cat "$CHECKSUM_FILE")
+    fi
+    echo "NEW_CHECKSUM: $NEW_CHECKSUM and OLD_CHECKSUM: $OLD_CHECKSUM"
 
-    if [[ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ]]; then
-        echo "values.yaml changed — deploying newrelic-bundle..."
+    if [[ "$FORCE" == "force" ]]; then
+        echo "Force flag detected — deploying newrelic-bundle regardless of checksum."
+        helm repo update
+        helm upgrade --install newrelic-bundle newrelic/nri-bundle \
+            -n newrelic --values "$VALUES_FILE" --create-namespace
+        echo "$NEW_CHECKSUM" > "$CHECKSUM_FILE"
+        sleep 60  # Wait for the newrelic-bundle to be ready
+    elif [[ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ]]; then
+        echo "values.yaml changed or first-time setup — deploying newrelic-bundle..."
         helm repo update
         helm upgrade --install newrelic-bundle newrelic/nri-bundle \
             -n newrelic --values "$VALUES_FILE" --create-namespace
