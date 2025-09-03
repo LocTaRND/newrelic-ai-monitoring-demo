@@ -27,41 +27,41 @@ stages:
         containerRegistry: 'registry'
         command: 'login'
 
-    # - task: Docker@2
-    #   displayName: Build and Push dotnet image
-    #   inputs:
-    #     containerRegistry: 'registry'
-    #     repository: 'taloc/dotnet-demo'
-    #     command: 'buildAndPush'
-    #     Dockerfile: 'application/dotnet/Dockerfile'
-    #     buildContext: 'application/dotnet'
-    #     tags: |
-    #       $(Build.BuildId)
-    #       latest
+    - task: Docker@2
+      displayName: Build and Push dotnet image
+      inputs:
+        containerRegistry: 'registry'
+        repository: 'taloc/dotnet-demo'
+        command: 'buildAndPush'
+        Dockerfile: 'application/dotnet/Dockerfile'
+        buildContext: 'application/dotnet'
+        tags: |
+          $(Build.BuildId)
+          latest
 
-    # - task: Docker@2
-    #   displayName: Build and Push python image
-    #   inputs:
-    #     containerRegistry: 'registry'
-    #     repository: 'taloc/newrelic-ai'
-    #     command: 'buildAndPush'
-    #     Dockerfile: 'application/python/Dockerfile'
-    #     buildContext: 'application/python'
-    #     tags: |
-    #       $(IMAGE_TAG)
-    #       latest
+    - task: Docker@2
+      displayName: Build and Push python image
+      inputs:
+        containerRegistry: 'registry'
+        repository: 'taloc/newrelic-ai'
+        command: 'buildAndPush'
+        Dockerfile: 'application/python/Dockerfile'
+        buildContext: 'application/python'
+        tags: |
+          $(IMAGE_TAG)
+          latest
 
-    # - task: Docker@2
-    #   displayName: Build and Push react-crud-app image
-    #   inputs:
-    #     containerRegistry: 'registry'
-    #     repository: 'taloc/nodejs-demo'
-    #     command: 'buildAndPush'
-    #     Dockerfile: 'application/react-crud-app/Dockerfile'
-    #     buildContext: 'application/react-crud-app'
-    #     tags: |
-    #       $(IMAGE_TAG)
-    #       latest
+    - task: Docker@2
+      displayName: Build and Push react-crud-app image
+      inputs:
+        containerRegistry: 'registry'
+        repository: 'taloc/nodejs-demo'
+        command: 'buildAndPush'
+        Dockerfile: 'application/react-crud-app/Dockerfile'
+        buildContext: 'application/react-crud-app'
+        tags: |
+          $(IMAGE_TAG)
+          latest
 
 ### New Relic Monitoring Integration
 - stage: NewRelic
