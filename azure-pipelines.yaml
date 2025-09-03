@@ -29,7 +29,7 @@ stages:
     - task: Docker@2
       inputs:
         containerRegistry: 'registry'
-        repository: 'dotnet-demo'
+        repository: 'taloc/dotnet-demo'
         command: 'buildAndPush'
         Dockerfile: 'application/dotnet/Dockerfile'
         buildContext: 'application/dotnet'
@@ -41,7 +41,7 @@ stages:
       displayName: Build and Push python image
       inputs:
         containerRegistry: 'registry'
-        repository: 'newrelic-ai'
+        repository: 'taloc/newrelic-ai'
         command: 'buildAndPush'
         Dockerfile: 'application/python/Dockerfile'
         buildContext: 'application/python'
@@ -53,7 +53,7 @@ stages:
       displayName: Build and Push react-crud-app image
       inputs:
         containerRegistry: 'registry'
-        repository: 'nodejs-demo'
+        repository: 'taloc/nodejs-demo'
         command: 'buildAndPush'
         Dockerfile: 'application/react-crud-app/Dockerfile'
         buildContext: 'application/react-crud-app'
