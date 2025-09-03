@@ -1,0 +1,162 @@
+# Azure Pipeline for Building and Pushing Docker Images for All Applications
+# Assumes you have service connection to your Azure Container Registry (ACR)
+# Replace <ACR_NAME> and <ACR_LOGIN_SERVER> with your actual values
+
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  IMAGE_TAG: '$(Build.BuildId)'
+
+stages:
+- stage: BuildAndPush
+  displayName: Build and Push Docker Images
+  jobs:
+  - job: BuildAndPush
+    displayName: Build and Push Images
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'registry'
+        command: 'login'
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'registry'
+        repository: 'dotnet-demo'
+        command: 'buildAndPush'
+        Dockerfile: 'application/dotnet/Dockerfile'
+        buildContext: 'application/dotnet'
+        tags: |
+          $(Build.BuildId)
+          latest
+
+    - task: Docker@2
+      displayName: Build and Push python image
+      inputs:
+        containerRegistry: 'registry'
+        repository: 'newrelic-ai'
+        command: 'buildAndPush'
+        Dockerfile: 'application/python/Dockerfile'
+        buildContext: 'application/python'
+        tags: |
+          $(IMAGE_TAG)
+          latest
+
+    - task: Docker@2
+      displayName: Build and Push react-crud-app image
+      inputs:
+        containerRegistry: 'registry'
+        repository: 'nodejs-demo'
+        command: 'buildAndPush'
+        Dockerfile: 'application/react-crud-app/Dockerfile'
+        buildContext: 'application/react-crud-app'
+        tags: |
+          $(IMAGE_TAG)
+          latest
+
+### New Relic Monitoring Integration
+- stage: NewRelic
+  dependsOn:
+  - BuildAndPush
+  condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+  displayName: New Relic Deployment Tracking
+  variables:
+    group: 'newrelic'
+    # Define your New Relic application names here
+    DOTNET_APP_NAME: "backend-api"
+    PYTHON_APP_NAME: "ai-chatbot"
+    REACT_APP_NAME: "frontend"
+  jobs:
+  - job: NewRelicDeployment
+    displayName: Send deployment markers to New Relic
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      fetchDepth: 1
+
+    - script: |
+        # Install jq if not available
+        sudo apt-get update && sudo apt-get install -y jq
+      displayName: 'Install dependencies'
+
+    - script: |
+        #!/bin/bash
+        set -e
+        
+        # Function to send deployment marker to New Relic
+        send_deployment_marker() {
+            local app_name=$1
+            local app_type=$2
+            
+            echo "Processing deployment marker for: $app_name ($app_type)"
+            
+            # Get the latest commit info
+            latest_commit_id=$(git rev-parse HEAD)
+            commit_message=$(git log -1 --pretty=format:"%s")
+            commit_author=$(git log -1 --pretty=format:"%an")
+            
+            echo "Commit ID: $latest_commit_id"
+            echo "Commit Message: $commit_message"
+            echo "Commit Author: $commit_author"
+            
+            # Search for the application entity in New Relic
+            echo "Searching for New Relic entity: $app_name"
+            
+            response=$(curl -s https://api.newrelic.com/graphql \
+              -H 'Content-Type: application/json' \
+              -H "API-Key: $(NEW_RELIC_API_KEY)" \
+              --data-binary '{
+                "query": "{ actor { entitySearch(queryBuilder: {domain: APM, name: \"'"$app_name"'\"}) { count query results { entities { guid name } } } } }",
+                "variables": {}
+              }')
+            
+            echo "New Relic API Response: $response"
+            
+            # Extract the entity GUID from the response
+            entityGuid=$(echo $response | jq -r '.data.actor.entitySearch.results.entities[0].guid // empty')
+            
+            if [ -z "$entityGuid" ] || [ "$entityGuid" = "null" ]; then
+                echo "Warning: Could not find entity GUID for $app_name. Skipping deployment marker."
+                return 0
+            fi
+            
+            echo "Found Entity GUID: $entityGuid"
+            
+            # Create deployment marker
+            deployment_response=$(curl -s -X POST https://api.newrelic.com/graphql \
+              -H 'Content-Type: application/json' \
+              -H "API-Key: $(NEW_RELIC_API_KEY)" \
+              --data-raw '{
+                "query": "mutation { changeTrackingCreateDeployment(deployment: { version: \"'"$(Build.BuildNumber)"'\", description: \"Azure DevOps deployment for '"$app_type"' application\", changelog: \"'"$commit_message"'\", commit: \"'"$latest_commit_id"'\", deepLink: \"'"$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)"'\", user: \"'"$commit_author"'\", deploymentType: ROLLING, entityGuid: \"'"$entityGuid"'\" }) { deploymentId description timestamp user } }",
+                "variables": {}
+              }')
+            
+            echo "Deployment marker response for $app_name: $deployment_response"
+            
+            # Check if deployment was successful
+            deployment_id=$(echo $deployment_response | jq -r '.data.changeTrackingCreateDeployment.deploymentId // empty')
+            
+            if [ -n "$deployment_id" ] && [ "$deployment_id" != "null" ]; then
+                echo "✅ Successfully created deployment marker for $app_name (ID: $deployment_id)"
+            else
+                echo "❌ Failed to create deployment marker for $app_name"
+                echo "Response: $deployment_response"
+            fi
+        }
+        
+        # Send deployment markers for all three applications
+        send_deployment_marker "$(DOTNET_APP_NAME)" "dotnet"
+        send_deployment_marker "$(PYTHON_APP_NAME)" "python" 
+        send_deployment_marker "$(REACT_APP_NAME)" "react"
+        
+        echo "🎉 New Relic deployment tracking completed!"
+        
+      displayName: 'Send deployment markers to New Relic'
