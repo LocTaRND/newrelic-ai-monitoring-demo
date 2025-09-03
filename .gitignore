@@ -2,7 +2,7 @@
 **/newrelic/values.yaml
 **/secrets/secrets.yaml
 *.log
-.env
+#.env
 # Node modules and build output
 react-crud-app/node_modules/
 react-crud-app/build/
