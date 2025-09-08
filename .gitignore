@@ -14,3 +14,4 @@ application/dotnet/bin/
 application/dotnet/obj/
 # VSCode
 .vscode/
+cluster-admin.sh

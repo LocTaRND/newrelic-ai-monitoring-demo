@@ -1,0 +1,38 @@
+Do you know NewRelic AIOps
+
+https://newrelic.com/platform/applied-intelligence
+
+AI
+3m ago
+To leverage New Relic AIOps, you can utilize the following features:
+
+Proactive Anomaly Detection: New Relic's Applied Intelligence automatically detects anomalies in your applications and services based on key metrics like throughput, errors, and latency. This feature is enabled by default for all instrumented apps and services at no extra cost. You can view anomalies in real-time and integrate them with Incident Intelligence for deeper analysis. Learn more about proactive anomaly detection.
+
+Root Cause Analysis: Applied Intelligence provides automatic insights into the probable root causes of issues, helping you quickly identify why an issue occurred. It analyzes event data to surface significant changes and classifies issues based on golden signals like errors and latency. This feature helps you understand the impact and scope of issues across your environment. More details can be found in the root cause analysis documentation.
+
+Integration with Collaboration Tools: New Relic AIOps supports integration with tools like Slack, ServiceNow, PagerDuty, and others, allowing you to manage incidents and receive notifications in your preferred collaboration platform. This integration helps streamline incident management and response processes. Explore more about two-way integration with ServiceNow.
+
+Log Patterns: This feature uses machine learning to detect patterns and outliers in log data, reducing manual troubleshooting time. It is currently in public beta, and you can enable it by contacting your customer success manager. This capability helps in quickly identifying anomalies in log data.
+
+These features collectively enhance your ability to monitor, detect, and respond to issues in your applications, improving overall incident management and operational efficiency.
+
+
+Loc TaDuc
+how about intelligence-engine
+
+gravatar
+
+gravatar
+AI
+< 1m ago
+To understand the "intelligence-engine" in the context of New Relic, consider the following aspects:
+
+Response Intelligence with New Relic AI: New Relic AI integrates with the Issue page to provide real-time insights, helping reduce the mean time to resolution (MTTR) of issues. It consolidates incident details into a single view, offering a concise summary of affected entities, issue severity, and alert conditions. This integration aids in quick understanding and resolution of issues. Learn more about Response Intelligence with New Relic AI.
+
+Causal Analysis Engine: This engine identifies potential symptoms that might trigger alerts and suggests mitigating actions. It analyzes various categories like deployment events and infrastructure resource limits to pinpoint anomalies and performance issues. Currently, it supports causal analysis for APM entities. More details can be found in the New Relic documentation.
+
+New Relic AI Preview: This preview offers capabilities like translating plain language into NRQL queries, synthesizing how-to guides, and providing insights for root cause analysis. It is part of an early access program for eligible customers. For more information, visit the New Relic AI Preview page.
+
+These features collectively enhance the observability and management of incidents, leveraging AI to streamline and improve the resolution process.
+
+https://docs.newrelic.com/docs/alerts/incident-management/response-intelligence-ai/

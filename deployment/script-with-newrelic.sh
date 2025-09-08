@@ -5,20 +5,56 @@
 ACTION=${1:-apply}
 FORCE=${2:-}
 
+VALUES_FILE="newrelic/values.yaml"
+CHECKSUM_FILE=".values_checksum"
+
 if [[ "$ACTION" == "apply" ]]; then
+    # Setup NewRelic
+    echo "Setting up NewRelic..."
+    NEW_CHECKSUM=$(sha256sum "$VALUES_FILE" | awk '{print $1}')
+    if [[ ! -f "$CHECKSUM_FILE" ]]; then
+        echo ".values_checksum not found — this looks like a first-time New Relic setup. Deploying newrelic-bundle..."
+        OLD_CHECKSUM=""
+    else
+        OLD_CHECKSUM=$(cat "$CHECKSUM_FILE")
+    fi
+    echo "NEW_CHECKSUM: $NEW_CHECKSUM and OLD_CHECKSUM: $OLD_CHECKSUM"
+
+    if [[ "$FORCE" == "force" ]]; then
+        echo "Force flag detected — deploying newrelic-bundle regardless of checksum."
+        helm repo update
+        helm upgrade --install newrelic-bundle newrelic/nri-bundle \
+            -n newrelic --values "$VALUES_FILE" --create-namespace
+        echo "$NEW_CHECKSUM" > "$CHECKSUM_FILE"
+        sleep 60  # Wait for the newrelic-bundle to be ready
+    elif [[ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ]]; then
+        echo "values.yaml changed or first-time setup — deploying newrelic-bundle..."
+        helm repo update
+        helm upgrade --install newrelic-bundle newrelic/nri-bundle \
+            -n newrelic --values "$VALUES_FILE" --create-namespace
+        echo "$NEW_CHECKSUM" > "$CHECKSUM_FILE"
+        sleep 60  # Wait for the newrelic-bundle to be ready
+    else
+        echo "values.yaml unchanged — skipping newrelic-bundle deployment."
+    fi
+
+    # Deploy newrelic config + instrumentation
+    kubectl apply -f newrelic/instrumentation.yaml 
+    kubectl apply -f newrelic/newrelic-config.yaml
+
     # Generate and apply secrets
     jq '.' appsettings.test.json > appsettings.json
     export appSettingsBase64=$(cat "appsettings.json" | base64 -w 0)
-    envsubst < secret.yaml > app/secret-backend.yaml
+    envsubst < secret.yaml > app-with-newrelic/secret-backend.yaml
 
     kubectl apply -f secrets/ -n default
 
     # Deploy application resources
-    kubectl apply -f app/ -n default
+    kubectl apply -f app-with-newrelic/ -n default
 
     # Clean up
     rm appsettings.json
-    rm app/secret-backend.yaml
+    rm app-with-newrelic/secret-backend.yaml
 
     # Check if the secret was created successfully
     if kubectl get secret appsettings-backend -n default &> /dev/null; then
@@ -65,7 +101,7 @@ if [[ "$ACTION" == "apply" ]]; then
     fi    
 elif [[ "$ACTION" == "delete" ]]; then
     echo "Deleting resources..."
-    kubectl delete -f app/ -n default
+    kubectl delete -f app-with-newrelic/ -n default
     kubectl delete -f secrets/ -n default
 else
     echo "Usage: $0 [apply|delete]"

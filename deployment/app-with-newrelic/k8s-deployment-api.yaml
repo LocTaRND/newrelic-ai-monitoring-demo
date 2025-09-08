@@ -18,12 +18,15 @@ spec:
   template:
     metadata:
       labels:
-        app: backend-api     
+        app: backend-api
+      annotations:
+        newrelic.io/scrape: 'true'
+        reloader.stakater.io/auto: "true"            
     spec:
       terminationGracePeriodSeconds: 30     
       containers:
         - name: backend-api
-          image: taloc/dotnet-demo:withoutnewrelic
+          image: taloc/dotnet-demo:withnewrelic
           imagePullPolicy: IfNotPresent
           ports:
             - name: app
@@ -78,11 +81,44 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.labels['app'] 
+            - name: CORECLR_ENABLE_PROFILING
+              value: '1'
+            - name: CORECLR_PROFILER
+              value: '{36032161-FFC0-4B61-B559-F6C5D41BAE5A}'
+            - name: CORECLR_NEWRELIC_HOME
+              value: /usr/local/newrelic-dotnet-agent
+            - name: CORECLR_PROFILER_PATH
+              value: /usr/local/newrelic-dotnet-agent/libNewRelicProfiler.so
+            - name: NEW_RELIC_APP_NAME
+              value: backend-api
+            - name: NEW_RELIC_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: newrelic-license-key
+                  key: NEW_RELIC_LICENSE_KEY
+            - name: NEW_RELIC_DISTRIBUTED_TRACING_ENABLED
+              value: 'true'                  
+            - name: NEW_RELIC_APPLICATION_LOGGING_ENABLED
+              value: 'true'
+            - name: NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED
+              value: 'true'
+            - name: NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED
+              value: '10000'
+            - name: NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED
+              value: 'false'
+            - name: NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED
+              value: 'true'
+            # - name: NEW_RELIC_AI_MONITORING_ENABLED
+            #   value: 'true'
           volumeMounts:
             - name: appsettings
               mountPath: /app/appsettings.json
               subPath: appsettings.json
-              readOnly: true           
+              readOnly: true
+            - name: newrelic
+              readOnly: true
+              mountPath: /app/newrelic.config
+              subPath: newrelic.config               
           resources: {}
       dnsPolicy: ClusterFirst
       enableServiceLinks: true
@@ -90,7 +126,11 @@ spec:
       volumes:
         - name: appsettings
           secret:
-            secretName: appsettings-backend            
+            secretName: appsettings-backend
+        - name: newrelic
+          configMap:
+            name: newrelic.config
+            defaultMode: 420              
 ---
 apiVersion: v1
 kind: Service
