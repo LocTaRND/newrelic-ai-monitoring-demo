@@ -18,9 +18,13 @@ spec:
         app: ai-chatbot
         version: v1
     spec:
+      # Add imagePullSecrets to pull from private Docker Hub
+      imagePullSecrets:
+      - name: dockerhub-secret
+
       containers:
       - name: chatbot
-        image: taloc/newrelic-ai:withoutnewrelic
+        image: taloc/python:withoutnewrelic
         ports:
         - containerPort: 5000
           name: http

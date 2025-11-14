@@ -11,6 +11,8 @@ Show me the overall health of my microservices application in the last 24 hours
 
 ### Performance Overview
 ```
+What is the performance summary for backend-api, ai-chatbot, and frontend?
+
 What is the performance summary for my .NET API, Python app, and React frontend?
 ```
 

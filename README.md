@@ -97,7 +97,10 @@ chmod +x deploy-postgresql-helm.sh
 # Create your secrets based on the template
 cd ../application
 chmod +x script.sh
-./script.sh
+# Without integration with New Relic
+./script.sh without-newrelic
+# Integration with New Relic
+./script.sh with-newrelic
 ```
 
 
@@ -115,8 +118,12 @@ cp deployment/secrets/secrets.yaml.template deployment/secrets/secrets.yaml
 ### 6. Deploy Applications
 ```bash
 cd deployment
+# Without New Relic
 chmod +x script.sh
 ./script.sh apply force # for run the first time or if you want to always deploy
+# With New Relic
+chmod +x script-with-newrelic.sh
+./script-with-newrelic.sh apply force # for run the first time or if you want to always deploy
 ```
 
 ## 🛠️ Local Development

@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: chatbot
-        image: taloc/newrelic-ai:withnewrelic
+        image: taloc/python:withnewrelic
         ports:
         - containerPort: 5000
           name: http

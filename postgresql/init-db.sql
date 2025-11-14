@@ -3,7 +3,7 @@
 -- Note: This script runs after the database and user are created by Helm
 -- Connect to testdb (it should already exist from Helm values)
 
--- Create users table with improved schema
+-- Create users table with snake_case naming (matching EF Core snake_case convention)
 CREATE TABLE IF NOT EXISTS public.users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(100) NOT NULL UNIQUE,

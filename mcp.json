@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "new-relic-mcp": {
+      "url": "https://mcp.newrelic.com/mcp/",
+      "headers": {
+        "api-key": ""
+      }
+    }
+  }
+}

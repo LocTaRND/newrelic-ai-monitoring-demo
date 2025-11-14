@@ -1,89 +1,94 @@
 #!/bin/bash
 
-# PostgreSQL Deployment Script using Helm
+echo "=== PostgreSQL Deployment with Bitnami Helm Chart ==="
 
-echo "=== PostgreSQL Deployment on Kubernetes ==="
-
-# Create namespace for database
-echo "Creating database namespace..."
+# Create namespace
 kubectl create namespace database --dry-run=client -o yaml | kubectl apply -f -
 
-# Create ConfigMap for database initialization
-echo "Creating database initialization scripts..."
+# Add Bitnami repository
+echo "Adding Bitnami Helm repository..."
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+
+# Create ConfigMap from external init-db.sql file
+echo "Creating ConfigMap for database initialization..."
 kubectl create configmap postgresql-initdb \
   --from-file=init-db.sql \
   --namespace database \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# Add Bitnami Helm repository
-echo "Adding Bitnami Helm repository..."
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
+# Create values file
+cat <<EOF > postgresql-values.yaml
+auth:
+  postgresPassword: "supersecret"
+  username: "appuser"
+  password: "apppassword"
+  database: "testdb"
 
-# Deploy PostgreSQL using Helm
-echo "Deploying PostgreSQL..."
+primary:
+  persistence:
+    enabled: true
+    size: 10Gi
+  
+  initdb:
+    scriptsConfigMap: postgresql-initdb
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Optional: Enable read replicas for HA
+readReplicas:
+  replicaCount: 0
+
+# Optional: Enable metrics
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+EOF
+
+# Deploy PostgreSQL
+echo "Deploying PostgreSQL with Bitnami chart..."
 helm upgrade --install postgresql bitnami/postgresql \
   --namespace database \
-  --values postgresql-helm-values.yaml \
-  --version 16.7.4
+  --values postgresql-values.yaml \
+  --wait \
+  --timeout 10m
 
-# Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL to be ready..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgresql -n database --timeout=300s
-
-# Get PostgreSQL password
-echo "Retrieving PostgreSQL password..."
+# Get password
 export POSTGRES_PASSWORD=$(kubectl get secret --namespace database postgresql -o jsonpath="{.data.postgres-password}" | base64 --decode)
 
-# Wait a bit more for the database to be fully ready
-echo "Waiting for database to be fully initialized..."
-sleep 30
+echo ""
+echo "=== Testing Database Connection ==="
+kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -c "SELECT version();"
 
-# Test database connection and show tables
-echo "Testing database connection..."
-kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d postgres -c "SELECT version();"
-
-# Connect to testdb and show tables
-echo "Checking testdb database..."
+echo ""
+echo "=== Checking Tables ==="
 kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -c "\dt"
 
-# Show users table if it exists
-echo "Checking users table..."
-kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -c "SELECT COUNT(*) as user_count FROM users;" 2>/dev/null || echo "Users table not found (will be created by init script)"
+echo ""
+echo "=== Checking Users ==="
+kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -c "SELECT * FROM users;"
 
-# Execute database initialization
-echo "Initializing database schema..."
-kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -c "\dt"
-
-# Manual initialization if configmap didn't work
-echo "Running manual database initialization..."
-kubectl cp init-db.sql database/postgresql-0:/tmp/init-db.sql
-kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -f /tmp/init-db.sql
-
-# Verify tables were created
-echo "Verifying database initialization..."
-kubectl exec -n database postgresql-0 -- env PGPASSWORD="$POSTGRES_PASSWORD" psql -U postgres -d testdb -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public';"
-
-# Get PostgreSQL connection information
-echo "=== PostgreSQL Connection Information ==="
+echo ""
+echo "=== Connection Information ==="
 echo "Host: postgresql.database.svc.cluster.local"
 echo "Port: 5432"
 echo "Database: testdb"
-echo "Username: appuser"
-echo "Postgres Username: postgres"
+echo "Username: appuser / postgres"
+echo "Password: [stored in secret 'postgresql']"
 
-# Get the password (for testing purposes)
-echo "Postgres password: $POSTGRES_PASSWORD"
-echo "App user password: apppassword (from helm values)"
-
-# Show status
+echo ""
 echo "=== Deployment Status ==="
-kubectl get pods -n database
-kubectl get svc -n database
+kubectl get all -n database
 
-# Show logs for troubleshooting
-echo "=== PostgreSQL Logs (last 10 lines) ==="
-kubectl logs -n database postgresql-0 --tail=10
-
-echo "PostgreSQL deployment completed!"
-
+echo ""
+echo "✅ PostgreSQL deployment completed!"
+echo ""
+echo "⚠️  NOTE: Consider migrating to CloudNativePG for production use"
+echo "   Bitnami is moving to a paid model after September 2025"

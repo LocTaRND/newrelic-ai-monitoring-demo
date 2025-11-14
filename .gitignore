@@ -15,3 +15,5 @@ application/dotnet/obj/
 # VSCode
 .vscode/
 cluster-admin.sh
+test.md
+newrelicAIOps.txt

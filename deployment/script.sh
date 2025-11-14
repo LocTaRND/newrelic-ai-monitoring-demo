@@ -4,12 +4,24 @@
 # Usage: ./script.sh [apply|delete] [force]
 ACTION=${1:-apply}
 FORCE=${2:-}
+DOCKERHUB_USERNAME="taloc"
+DOCKERHUB_PASSWORD="Andy@011002"
+DOCKERHUB_EMAIL="ta.loc1@gmail.com"
+NAMESPACE="default"
 
 if [[ "$ACTION" == "apply" ]]; then
     # Generate and apply secrets
     jq '.' appsettings.test.json > appsettings.json
     export appSettingsBase64=$(cat "appsettings.json" | base64 -w 0)
     envsubst < secret.yaml > app/secret-backend.yaml
+
+    kubectl create secret docker-registry dockerhub-secret \
+    --docker-server=https://index.docker.io/v1/ \
+    --docker-username="$DOCKERHUB_USERNAME" \
+    --docker-password="$DOCKERHUB_PASSWORD" \
+    --docker-email="$DOCKERHUB_EMAIL" \
+    --namespace=$NAMESPACE \
+    --dry-run=client -o yaml | kubectl apply -f -
 
     kubectl apply -f secrets/ -n default
 

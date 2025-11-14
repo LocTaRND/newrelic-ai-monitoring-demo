@@ -20,10 +20,14 @@ spec:
       labels:
         app: backend-api     
     spec:
-      terminationGracePeriodSeconds: 30     
+      terminationGracePeriodSeconds: 30    
+      # Add imagePullSecrets to pull from private Docker Hub
+      imagePullSecrets:
+      - name: dockerhub-secret
+
       containers:
         - name: backend-api
-          image: taloc/dotnet-demo:withoutnewrelic
+          image: taloc/dotnet:withoutnewrelic
           imagePullPolicy: IfNotPresent
           ports:
             - name: app
